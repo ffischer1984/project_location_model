@@ -1,16 +1,22 @@
-import { defineConfig } from 'vite'
+import {defineConfig} from 'vite'
 import react from '@vitejs/plugin-react-swc'
-import sass from 'sass'
+import eslint from 'vite-plugin-eslint';
 
 
 // https://vitejs.dev/config/
 export default defineConfig({
   base: './',
-  plugins: [react()],
+  plugins: [
+      react(),
+      eslint({
+        // optional: nur bestimmte Dateien/Ordner prüfen
+        include: ['src/**/*.ts', 'src/**/*.tsx']
+      })
+  ],
   css: {
     preprocessorOptions: {
       scss: {
-        implementation: sass,
+        // additionalData: `@import "src/styles/variables";`
       },
     },
   },
