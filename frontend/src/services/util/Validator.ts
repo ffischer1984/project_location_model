@@ -1,6 +1,8 @@
 import Ajv, { ValidateFunction } from "ajv";
 import addFormats from "ajv-formats";
 import { SupportedLangs } from "./Utils.ts";
+import instanceofDef from "ajv-keywords/dist/definitions/instanceof";
+import ajvKeywords from "ajv-keywords";
 /**
  * Load schemas from the public/schemas directory
  * Schemas are copied there during build from model/schema/
@@ -55,11 +57,8 @@ export async function getCoreValidator(lang: SupportedLangs): Promise<ValidateFu
     // Create AJV instance and add both schemas
     const ajv = new Ajv({ allErrors: true });
     addFormats(ajv);
-    ajv.addKeyword({
-        keyword: "instanceof",
-        validate: (schema: string, data: unknown) => schema === "Date" ? data instanceof Date : true,
-        errors: false,
-    });
+    ajvKeywords(ajv, ["instanceof"]); // nur das benötigte Keyword laden
+    instanceofDef.CONSTRUCTORS["Date"] = Date;
 
 
     // Add the core schema first (it's referenced by feature schema)
@@ -86,11 +85,8 @@ export async function getProjectValidator(lang: SupportedLangs): Promise<Validat
 
     // Create AJV instance and add both schemas
     const ajv = new Ajv({ allErrors: true });
-    ajv.addKeyword({
-        keyword: "instanceof",
-        validate: (schema: string, data: unknown) => schema === "Date" ? data instanceof Date : true,
-        errors: false,
-    });
+    ajvKeywords(ajv, ["instanceof"]); // nur das benötigte Keyword laden
+    instanceofDef.CONSTRUCTORS["Date"] = Date;
 
     // Add the core schema first (it's referenced by feature schema)
     ajv.addSchema(core);

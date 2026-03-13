@@ -1,7 +1,7 @@
 import {ErrorObject, ValidateFunction} from "ajv";
 import * as xlsx from "xlsx";
 import {WorkBook} from "xlsx";
-import {safeParseFloat} from "./FileConversionMethods.tsx";
+import {safeParseFloat} from "./FileConversionMethods.ts";
 import * as ExcelJS from 'exceljs';
 
 export enum OGMFileTypes {

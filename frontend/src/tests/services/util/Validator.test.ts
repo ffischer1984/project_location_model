@@ -1,5 +1,5 @@
 import { describe, expect, it, jest, beforeEach } from "@jest/globals";
-import { getProjectValidator } from "../../../services/util/Validator.ts";
+import { getCoreValidator, getProjectValidator } from "../../../services/util/Validator.ts";
 import Utils from "../../../services/util/Utils.ts";
 import validateDataEng from "../../assets/validate_en.json";
 import validateDataFr from "../../assets/validate_data_fr.json";
@@ -90,5 +90,178 @@ describe("getProjectValidator", () => {
         expect(ok).toBe(true);
         expect(bad).toBe(false);
         expect(Array.isArray(validator.errors) || validator.errors === null).toBe(true);
+    });
+
+    it("rejects when schema fetch returns 404", async () => {
+        global.fetch = jest.fn(() =>
+            Promise.resolve({ ok: false, statusText: "Not Found" } as Response)
+        ) as any;
+
+        await expect(getProjectValidator("en"))
+            .rejects
+            .toThrow("Cannot load validation schemas - please check your setup");
+    });
+
+    it("fails when Feature type is wrong", async () => {
+        global.fetch = jest.fn((url) => mockFetch(url as string)) as any;
+        const validator = await getProjectValidator("en") as any;
+
+        const wrongType = { ...withDates(validateDataEng), type: "FeatureCollection" };
+        expect(validator(wrongType)).toBe(false);
+    });
+
+    it("null geometry is valid", async () => {
+        global.fetch = jest.fn((url) => mockFetch(url as string)) as any;
+        const validator = await getProjectValidator("en") as any;
+
+        const nullGeometry = { ...withDates(validateDataEng), geometry: null };
+        expect(validator(nullGeometry)).toBe(true);
+    });
+
+    it("fails with invalid enum value in properties", async () => {
+        global.fetch = jest.fn((url) => mockFetch(url as string)) as any;
+        const validator = await getProjectValidator("en") as any;
+
+        const base = withDates(validateDataEng);
+        const invalidEnum = {
+            ...base,
+            properties: { ...base.properties, geographic_exactness: "ungültig" }
+        };
+        expect(validator(invalidEnum)).toBe(false);
+    });
+
+    it("fails when date fields are strings instead of Date objects", async () => {
+        global.fetch = jest.fn((url) => mockFetch(url as string)) as any;
+        const validator = await getProjectValidator("en") as any;
+
+        // Raw JSON ohne withDates() – Datumsfelder bleiben ISO-Strings
+        expect(validator(validateDataEng)).toBe(false);
+    });
+
+    it("errors array is populated on validation failure", async () => {
+        global.fetch = jest.fn((url) => mockFetch(url as string)) as any;
+        const validator = await getProjectValidator("en") as any;
+
+        validator({});
+        expect(Array.isArray(validator.errors)).toBe(true);
+        expect(validator.errors.length).toBeGreaterThan(0);
+    });
+
+    it("errors are null after successful validation", async () => {
+        global.fetch = jest.fn((url) => mockFetch(url as string)) as any;
+        const validator = await getProjectValidator("en") as any;
+
+        validator({}); // Fehler auslösen
+        validator(withDates(validateDataEng)); // valide Daten – Fehler müssen gecleared werden
+        expect(validator.errors).toBeNull();
+    });
+});
+
+describe("getCoreValidator", () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    it("returns a validator function for 'en'", async () => {
+        global.fetch = jest.fn((url) => mockFetch(url as string)) as any;
+        const validator = await getCoreValidator("en");
+        expect(typeof validator).toBe("function");
+    });
+
+    it("returns a validator function for 'fr'", async () => {
+        global.fetch = jest.fn((url) => mockFetch(url as string)) as any;
+        const validator = await getCoreValidator("fr");
+        expect(typeof validator).toBe("function");
+    });
+
+    it("validates correct EN core properties", async () => {
+        global.fetch = jest.fn((url) => mockFetch(url as string)) as any;
+        const validator = await getCoreValidator("en") as any;
+
+        const valid = validator(withDates(validateDataEng.properties));
+        expect(valid).toBe(true);
+        expect(validator.errors).toBeNull();
+    });
+
+    it("validates correct FR core properties", async () => {
+        global.fetch = jest.fn((url) => mockFetch(url as string)) as any;
+        const validator = await getCoreValidator("fr") as any;
+
+        const valid = validator(withDates(validateDataFr.properties));
+        expect(valid).toBe(true);
+        expect(validator.errors).toBeNull();
+    });
+
+    it("fails when required property 'donor_project_no' is missing", async () => {
+        global.fetch = jest.fn((url) => mockFetch(url as string)) as any;
+        const validator = await getCoreValidator("en") as any;
+
+        const { donor_project_no: _, ...withoutDonorNo } = withDates(validateDataEng.properties) as any;
+        expect(validator(withoutDonorNo)).toBe(false);
+        expect(validator.errors?.some((e: any) => e.params?.missingProperty === "donor_project_no")).toBe(true);
+    });
+
+    it("fails when required property 'location_name' is missing", async () => {
+        global.fetch = jest.fn((url) => mockFetch(url as string)) as any;
+        const validator = await getCoreValidator("en") as any;
+
+        const { location_name: _, ...rest } = withDates(validateDataEng.properties) as any;
+        expect(validator(rest)).toBe(false);
+    });
+
+    it("fails with invalid 'geographic_exactness' enum", async () => {
+        global.fetch = jest.fn((url) => mockFetch(url as string)) as any;
+        const validator = await getCoreValidator("en") as any;
+
+        const invalidData = { ...withDates(validateDataEng.properties), geographic_exactness: "invalid" };
+        expect(validator(invalidData)).toBe(false);
+    });
+
+    it("fails with invalid 'location_activity_status' enum", async () => {
+        global.fetch = jest.fn((url) => mockFetch(url as string)) as any;
+        const validator = await getCoreValidator("en") as any;
+
+        const invalidData = { ...withDates(validateDataEng.properties), location_activity_status: "Running" };
+        expect(validator(invalidData)).toBe(false);
+    });
+
+    it("fails when date field is a string instead of a Date object", async () => {
+        global.fetch = jest.fn((url) => mockFetch(url as string)) as any;
+        const validator = await getCoreValidator("en") as any;
+
+        // Rohe Properties ohne withDates() – Datumsfelder bleiben ISO-Strings
+        expect(validator(validateDataEng.properties)).toBe(false);
+    });
+
+    it("fails when donor_project_no is a string instead of a number", async () => {
+        global.fetch = jest.fn((url) => mockFetch(url as string)) as any;
+        const validator = await getCoreValidator("en") as any;
+
+        const invalidData = { ...withDates(validateDataEng.properties), donor_project_no: "29937" };
+        expect(validator(invalidData)).toBe(false);
+    });
+
+    it("rejects for unsupported language", async () => {
+        await expect(getCoreValidator("de" as any))
+            .rejects
+            .toThrow("Unsupported language: de");
+    });
+
+    it("rejects when fetch fails", async () => {
+        global.fetch = jest.fn(() => Promise.reject(new Error("Network error"))) as any;
+
+        await expect(getCoreValidator("en"))
+            .rejects
+            .toThrow("Cannot load validation core-schemas - please check your setup");
+    });
+
+    it("rejects when schema fetch returns 404", async () => {
+        global.fetch = jest.fn(() =>
+            Promise.resolve({ ok: false, statusText: "Not Found" } as Response)
+        ) as any;
+
+        await expect(getCoreValidator("en"))
+            .rejects
+            .toThrow("Cannot load validation core-schemas - please check your setup");
     });
 });

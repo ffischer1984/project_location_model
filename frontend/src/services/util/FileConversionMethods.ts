@@ -12,6 +12,7 @@ export const safeParseFloat = (unsafeFloatString: string): number => {
 // Transform CSV/Excel data to use location with nested latitude and longitude
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 export const transformCsvToLocation = (data: string | ArrayBuffer | null | undefined) => {
+    if (data == null) return [];
     const parsedData:Array<any> = Papa.parse(data as string, { header: true, dynamicTyping: true }).data;
 
     return parsedData.map(row => {
