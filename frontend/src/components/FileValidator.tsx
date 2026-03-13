@@ -148,6 +148,7 @@ export default function FileValidator(): React.ReactElement {
 
 
 		} catch (error) {
+			setIsProcessing(false)
 			console.error(error)
 			if (error instanceof Error) {
 				setValidationResult(`Error processing Excel file: ${error.message}`);
