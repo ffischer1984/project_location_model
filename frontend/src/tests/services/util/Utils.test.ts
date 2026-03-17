@@ -42,9 +42,10 @@ describe("Utils", () => {
             const result = Utils.toDateObj("k", "2024-03-13T10:00:00Z");
             expect(result).toBeInstanceOf(Date);
         });
-        it("does NOT convert a plain date string (YYYY-MM-DD)", () => {
+        it("converts a plain date string (YYYY-MM-DD) to a Date object", () => {
             const result = Utils.toDateObj("k", "2024-03-13");
-            expect(result).toBe("2024-03-13");
+            expect(result).toBeInstanceOf(Date);
+            expect((result as Date).toISOString()).toBe("2024-03-13T00:00:00.000Z");
         });
         it("does NOT convert a random string", () => {
             expect(Utils.toDateObj("k", "hello")).toBe("hello");
