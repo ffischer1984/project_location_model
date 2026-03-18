@@ -334,10 +334,6 @@
         "related_community": {
             "description": "Enter a community, village, hamlet or neighbourhood name that relates to this location, this can serve for manually add smaller administrative unit names that are not in global databases.",
             "type": "string"
-        },
-        "uniqueId": {
-            "description": "For new locations, this column is empty. For updates, your KfW counterpart will provide you with a list of unique_id numbers in this file to ensure that updated location IDs match with the former ones.",
-            "type": "string"
         }
     },
     "required": [
