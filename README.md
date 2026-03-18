@@ -10,12 +10,18 @@ In case you need support or in case you would like to propose improvements to th
 
 
 # Validator tool (for developers)
-## Install
-GUI 
+
+## GUI
+
+### Install
 ```bash
 cd frontend && npm install
 npm run dev
 ```
+
+### E-Mail-Button:
+one of the column will be used in the email-button. This can be changed with config-file at [AppConfig.jsonc](frontend/src/AppConfig.jsonc)  
+
 
 
 ## Analyze-Tools

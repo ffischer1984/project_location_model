@@ -1,5 +1,5 @@
 /* eslint-disable  @typescript-eslint/no-explicit-any */
-import React from "react";
+import React, { useState } from "react";
 import {GeoJSON, LayersControl, MapContainer, TileLayer, useMap, ZoomControl} from "react-leaflet";
 import L from "leaflet";
 import 'leaflet/dist/leaflet.css';
@@ -66,120 +66,131 @@ function filterValidFeatures(features: GeoJSONFeature[]): GeoJSONFeature[] {
 }
 
 const MapComponent: React.FC<MapComponentProps> = ({ geoJsonData }) => {
+  const [selectedFeature, setSelectedFeature] = useState<GeoJSONFeature | null>(null);
 
   const validGeoJsonData: GeoJSONCollection = geoJsonData && geoJsonData.features ? {
     type: "FeatureCollection",
     features: filterValidFeatures(geoJsonData?.features)
   } : null;
 
-  const onEachFeature = (feature: any, layer: L.Layer) => {
-    if (feature.properties) {
-      const props = feature.properties;
-      const timeLapseLink = feature.timelapse_link ?
-        `<a href="${feature.timelapse_link}" target="_blank">Timelapse Link</a>` : "";
-
-      // Create a formatted HTML string with all the requested fields in the exact order from the table
-      const popupContent = `
-        <div class="map-popup">
-          <h3>${props.locationName || 'N/A'}</h3>
-          <div class="popup-content">
-            <p><span class="popup-label">Unique ID:</span> <span class="popup-value">${props.uniqueId || 'N/A'}</span></p>
-            <p><span class="popup-label">Inpro Nr.:</span> <span class="popup-value">${props.kfwProjectNoINPRO || 'N/A'}</span></p>
-            <p><span class="popup-label">Project Acronym:</span> <span class="popup-value">${props.projectAcronym || 'N/A'}</span></p>
-            <p><span class="popup-label">Data Owner:</span> <span class="popup-value">${props.dataOwner || 'N/A'}</span></p>
-            <p><span class="popup-label">Publishing Restrictions:</span> <span class="popup-value">${props.publishingRestrictions || 'N/A'}</span></p>
-            <p><span class="popup-label">Date of Data Collection:</span> <span class="popup-value">${props.dateOfDataCollection || 'N/A'}</span></p>
-            <p><span class="popup-label">Location Identifier:</span> <span class="popup-value">${props.projectSpecificLocationIdentifier || 'N/A'}</span></p>
-            <p><span class="popup-label">Location name:</span> <span class="popup-value">${props.locationName || 'N/A'}</span></p>
-            <p><span class="popup-label">Activity Status:</span> <span class="popup-value">${props.locationActivityStatus || 'N/A'}</span></p>
-            <p><span class="popup-label">Start Date:</span> <span class="popup-value">${props.plannedOrActualStartDate || 'N/A'}</span></p>
-            <p><span class="popup-label">End Date:</span> <span class="popup-value">${props.plannedOrActualEndDate || 'N/A'}</span></p>
-            <p><span class="popup-label">Activity Description:</span> <span class="popup-value">${props.activityDescriptionGeneral || 'N/A'}</span></p>
-            <p><span class="popup-label">Activity Details:</span> <span class="popup-value">${props.additionalActivityDescription || 'N/A'}</span></p>
-            <p><span class="popup-label">Location Type:</span> <span class="popup-value">${props.sector_location?.location_type || 'N/A'}</span></p>
-            <p><span class="popup-label">DAC5 Sector:</span> <span class="popup-value">${props.dac5PurposeCode || 'N/A'}</span></p>
-            <p><span class="popup-label">Geographic Exactness:</span> <span class="popup-value">${props.geographicExactness || 'N/A'}</span></p>
-            <p><span class="popup-label">Related Community or Village:</span> <span class="popup-value">${props.relatedCommunityVillageNeighborhood || 'N/A'}</span></p>
-            <p><span class="popup-label">Scheme Version:</span> <span class="popup-value">${props.schemeVersion || 'N/A'}</span></p>
-            ${timeLapseLink ? `<div>${timeLapseLink}</div>` : ''}
-          </div>
-        </div>
-      `;
-
-      layer.bindPopup(popupContent);
+  /** Formatiert einen Property-Wert für die Anzeige (u.a. Date-Objekte). */
+  const formatValue = (value: any): string => {
+    if (value instanceof Date) {
+      return value.toISOString().split('T')[0];
     }
+    if (value === null || value === undefined || value === '') {
+      return 'N/A';
+    }
+    if (typeof value === 'object') {
+      return JSON.stringify(value);
+    }
+    return String(value);
+  };
+
+  const onEachFeature = (feature: any, layer: L.Layer) => {
+    layer.on('click', () => {
+      setSelectedFeature(feature);
+    });
   };
 
   return (
-    <MapContainer
-      center={[20, 30]} // Default center of the map
-      zoom={2} // Default zoom level
-      style={mapContainerStyle}
-      zoomControl={false} // Disable default zoom control, we'll add it manually
-    >
-      {/* Add Zoom Control (Top Left) */}
-      <ZoomControl position="topleft" />
+    <div style={mapWrapperStyle}>
+      <MapContainer
+        center={[20, 30]}
+        zoom={2}
+        style={mapContainerStyle}
+        zoomControl={false}
+      >
+        <ZoomControl position="topleft" />
+        <FullscreenControl />
 
-      {/* Add Fullscreen Control */}
-      <FullscreenControl />
+        <LayersControl position="topleft">
+          <LayersControl.BaseLayer name="GoogleStreets">
+            <TileLayer
+              url="https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}"
+              subdomains={["mt0", "mt1", "mt2", "mt3"]}
+              maxZoom={20}
+              attribution="Map data © GoogleMaps contributors"
+            />
+          </LayersControl.BaseLayer>
+          <LayersControl.BaseLayer checked name="GoogleHybrid">
+            <TileLayer
+              url="https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}"
+              subdomains={["mt0", "mt1", "mt2", "mt3"]}
+              maxZoom={20}
+              attribution="Map data © GoogleMaps contributors"
+            />
+          </LayersControl.BaseLayer>
+          <LayersControl.BaseLayer name="GoogleEarth">
+            <TileLayer
+              url="https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
+              subdomains={["mt0", "mt1", "mt2", "mt3"]}
+              maxZoom={20}
+              attribution="Map data © GoogleMaps contributors"
+            />
+          </LayersControl.BaseLayer>
+          <LayersControl.BaseLayer name="GoogleTerrain">
+            <TileLayer
+              url="https://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}"
+              subdomains={["mt0", "mt1", "mt2", "mt3"]}
+              maxZoom={20}
+              attribution="Map data © GoogleMaps contributors"
+            />
+          </LayersControl.BaseLayer>
+          <LayersControl.BaseLayer name="OpenStreetMap">
+            <TileLayer
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution="© OpenStreetMap contributors"
+            />
+          </LayersControl.BaseLayer>
+        </LayersControl>
 
-      {/* Base Layers */}
-      <LayersControl position="topleft">
-        <LayersControl.BaseLayer name="GoogleStreets">
-          <TileLayer
-            url="https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}"
-            subdomains={["mt0", "mt1", "mt2", "mt3"]}
-            maxZoom={20}
-            attribution="Map data © GoogleMaps contributors"
-          />
-        </LayersControl.BaseLayer>
-        <LayersControl.BaseLayer checked name="GoogleHybrid">
-          <TileLayer
-            url="https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}"
-            subdomains={["mt0", "mt1", "mt2", "mt3"]}
-            maxZoom={20}
-            attribution="Map data © GoogleMaps contributors"
-          />
-        </LayersControl.BaseLayer>
-        <LayersControl.BaseLayer name="GoogleEarth">
-          <TileLayer
-            url="https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
-            subdomains={["mt0", "mt1", "mt2", "mt3"]}
-            maxZoom={20}
-            attribution="Map data © GoogleMaps contributors"
-          />
-        </LayersControl.BaseLayer>
-        <LayersControl.BaseLayer name="GoogleTerrain">
-          <TileLayer
-            url="https://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}"
-            subdomains={["mt0", "mt1", "mt2", "mt3"]}
-            maxZoom={20}
-            attribution="Map data © GoogleMaps contributors"
-          />
-        </LayersControl.BaseLayer>
-        <LayersControl.BaseLayer name="OpenStreetMap">
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution="© OpenStreetMap contributors"
-          />
-        </LayersControl.BaseLayer>
-      </LayersControl>
+        {validGeoJsonData && (
+          <GeoJSON data={validGeoJsonData} onEachFeature={onEachFeature} />
+        )}
+      </MapContainer>
 
-      {/* GeoJSON Layer */}
-      {validGeoJsonData && <GeoJSON data={validGeoJsonData} onEachFeature={onEachFeature} />}
-    </MapContainer>
-
+      {/* Sidebar – erscheint rechts neben der Karte beim Klick auf ein Feature */}
+      <div className={`map-sidebar${selectedFeature ? ' map-sidebar--open' : ''}`}>
+        {selectedFeature && (
+          <>
+            <div className="map-sidebar__header">
+              <h3>{selectedFeature.properties?.['location_name'] || 'Details'}</h3>
+              <button
+                className="map-sidebar__close"
+                onClick={() => setSelectedFeature(null)}
+                aria-label="Schließen"
+              >
+                ×
+              </button>
+            </div>
+            <div className="map-sidebar__content">
+              {Object.entries(selectedFeature.properties).map(([key, value]) => (
+                <div key={key} className="map-sidebar__row">
+                  <span className="map-sidebar__label">{key.replace(/_/g, ' ')}</span>
+                  <span className="map-sidebar__value">{formatValue(value)}</span>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
   );
 };
 
 export default MapComponent;
 
+const mapWrapperStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "stretch",
+  width: "100%",
+  margin: "20px 0",
+};
+
 const mapContainerStyle: React.CSSProperties = {
   position: "relative",
-  display: "flex",
-  alignItems: "left",
-  width: "100%", // Full width to match text description
-  maxWidth: "100%", // Remove previous constraint of 1280px to use full width
-  aspectRatio: "16 / 13.5", // Adjusted from 16/9 to make it 50% taller
-  margin: "20px 0",
+  flex: "1 1 auto",
+  minWidth: 0,
+  aspectRatio: "16 / 13.5",
 };
