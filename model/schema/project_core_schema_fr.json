@@ -39,10 +39,6 @@
             "instanceof": "Date"
 
         },
-        "filenameOfAdditionalGeoData": {
-            "description": "Filename of the KML file where the associated geometry information is found.",
-            "type": "string"
-        },
         "geographic_exactness": {
             "description": "Use 'exact' if the exact coordinates are known + no security restrictions apply. Otherwise, use 'approximate (security)' or 'approx. (yet unknown)'. If the target area is an admin unit, use 'approx. (admin unit).'.",
             "enum": [
