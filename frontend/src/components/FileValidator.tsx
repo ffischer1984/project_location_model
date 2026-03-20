@@ -25,13 +25,10 @@ import FileUpload from "./FileUpload.tsx";
 import {getAppConfig} from "../services/Config.ts";
 import {Processing} from "./elements/Processing.tsx";
 
-function sanitizeLang(lang: string): SupportedLangs {
-	return lang === 'fr' ? 'fr' : 'en';
-}
+
 
 export function getValidationErrorHeader(lang: SupportedLangs): React.ReactElement {
-	const safeLang = sanitizeLang(lang);
-	const schemaDocUrl = `https://mapme-initiative.github.io/project_location_model/schemas/project_core_schema_${safeLang}.html`;
+	const schemaDocUrl = `https://mapme-initiative.github.io/project_location_model/schemas/project_core_schema_${Utils.sanitizeLang(lang)}.html`;
 	return <p>Your data contains errors. Please correct them in your original file and re-upload.<br/>For field descriptions and examples, see: <a href={schemaDocUrl}>schema-definition</a></p>
 }
 export default function FileValidator(): React.ReactElement {
@@ -285,7 +282,7 @@ export default function FileValidator(): React.ReactElement {
 				<Select
 					labelId="lang-select-label"
 					value={lang}
-					onChange={e => setLang(sanitizeLang(String(e.target.value)))}
+					onChange={e => setLang(Utils.sanitizeLang(String(e.target.value)))}
 					label="Language"
 				>
 					<MenuItem value="en">English</MenuItem>

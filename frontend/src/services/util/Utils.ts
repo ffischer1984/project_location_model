@@ -351,7 +351,9 @@ export default class Utils {
         ));
     }
 
-
+    public static sanitizeLang(lang: string): SupportedLangs {
+        return lang === 'fr' ? 'fr' : 'en';
+    }
 
     /**
      * Format AJV errors for Excel/CSV with row numbers.
