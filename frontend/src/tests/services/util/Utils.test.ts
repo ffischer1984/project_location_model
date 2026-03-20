@@ -214,19 +214,6 @@ describe("Utils", () => {
     });
 
     // -----------------------------------------------------------------------
-    describe("getValidationErrorHeader", () => {
-        it("returns header with English documentation link", () => {
-            const header = Utils.getValidationErrorHeader("en");
-            expect(header).toContain("Your data contains errors");
-            expect(header).toContain("project_core_schema_en.html");
-        });
-        it("returns header with French documentation link", () => {
-            const header = Utils.getValidationErrorHeader("fr");
-            expect(header).toContain("project_core_schema_fr.html");
-        });
-    });
-
-    // -----------------------------------------------------------------------
     describe("formatAjvErrorsWithRow", () => {
         it("returns empty array for null errors", () => {
             expect(Utils.formatAjvErrorsWithRow(null as any, 1)).toEqual([]);

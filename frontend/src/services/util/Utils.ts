@@ -351,13 +351,7 @@ export default class Utils {
         ));
     }
 
-    /**
-     * Get the validation error header with a documentation link.
-     */
-    public static getValidationErrorHeader(lang: SupportedLangs): string {
-        const schemaDocUrl = `https://mapme-initiative.github.io/project_location_model/schemas/project_core_schema_${lang}.html`;
-        return `Your data contains errors. Please correct them in your original file and re-upload.\nFor field descriptions and examples, see: ${schemaDocUrl}`;
-    }
+
 
     /**
      * Format AJV errors for Excel/CSV with row numbers.

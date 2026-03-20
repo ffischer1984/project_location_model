@@ -22,10 +22,13 @@ import {
 import SendMailButton from "./SendMailButton.tsx";
 import {getCoreValidator, getProjectValidator} from "../services/util/Validator.ts";
 import FileUpload from "./FileUpload.tsx";
-import {getAppConfig} from "../App.tsx";
+import {getAppConfig} from "../services/Config.ts";
 import {Processing} from "./elements/Processing.tsx";
 
-
+export function getValidationErrorHeader(lang: SupportedLangs): React.ReactElement {
+	const schemaDocUrl = `${getAppConfig().host}/project_location_model/schemas/project_core_schema_${lang}.html`;
+	return <p>Your data contains errors. Please correct them in your original file and re-upload.<br/>For field descriptions and examples, see: <a href={schemaDocUrl}>schema-definition</a></p>
+}
 export default function FileValidator(): React.ReactElement {
 	const [lang, setLang] = useState<SupportedLangs>('en');
 	const [validationResult, setValidationResult] = useState<string | null>(null);
@@ -67,8 +70,7 @@ export default function FileValidator(): React.ReactElement {
 						} else {
 							// Format validation errors
 							const formattedErrors = Utils.formatAjvErrorsWithRow(validateProject.errors || [], 1);
-							const header = Utils.getValidationErrorHeader(lang);
-							setValidationResult(`${header}\n\n${formattedErrors.join("\n")}`);
+							setValidationResult(formattedErrors.join("\n"));
 						}
 						break;
 					}
@@ -136,8 +138,7 @@ export default function FileValidator(): React.ReactElement {
 					if (allErrors.length == 0) { // Wenn keine Fehler gefunden wurden
 						setValidationResult("Excel/CSV-Validation successfull!");
 					} else {
-						const header = Utils.getValidationErrorHeader(lang);
-						setValidationResult(`${header}\n\n${allErrors.join("\n")}`);
+						setValidationResult(`${allErrors.join("\n")}`);
 						setEnableEMailButton(false)
 					}
 					const features = jsonData.map(Utils.toGeoFeature)
@@ -224,8 +225,7 @@ export default function FileValidator(): React.ReactElement {
 				setEnableEMailButton(true)
 				setInProNumbers(new Set(localInproNumbers))
 			} else {
-				const header = Utils.getValidationErrorHeader(lang);
-				setValidationResult(`${header}\n\n${allErrors.join("\n")}`);
+				setValidationResult(allErrors.join("\n"));
 				setEnableEMailButton(false)
 			}
 
@@ -322,16 +322,10 @@ export default function FileValidator(): React.ReactElement {
 			>
 				<h3>Validation Result</h3>
 				<pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontFamily: 'inherit', fontSize: '0.9rem' }}>
+					{getValidationErrorHeader(lang)}
+					<br/>
 					{validationResult.split('\n').map((line, i) =>
-						line.startsWith('For field descriptions') ? (
-							<span key={i}>{line.replace(/(https?:\/\/[^\s]+)/, '').trim()}{' '}
-								<a href={line.match(/(https?:\/\/[^\s]+)/)?.[1] || '#'} target="_blank" rel="noopener noreferrer">
-									{line.match(/(https?:\/\/[^\s]+)/)?.[1]}
-								</a>{'\n'}
-							</span>
-						) : (
-							<span key={i}>{line}{'\n'}</span>
-						)
+						<span key={i}>{line}{'\n'}</span>
 					)}
 				</pre>
 			</div>
