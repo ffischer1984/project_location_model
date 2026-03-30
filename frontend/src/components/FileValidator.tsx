@@ -20,7 +20,7 @@ import {
 } from '@mui/material';
 
 import SendMailButton from "./SendMailButton.tsx";
-import {getCoreValidator, getProjectValidator} from "../services/util/Validator.ts";
+import Validator from "../services/util/Validator.ts";
 import FileUpload from "./FileUpload.tsx";
 import {getAppConfig} from "../services/Config.ts";
 import {Processing} from "./elements/Processing.tsx";
@@ -54,7 +54,7 @@ export default function FileValidator(): React.ReactElement {
 
 	const handleJsonFiles = (file: File) => {
 		console.debug("handleJsonFiles")
-		Promise.all([file.text(), getProjectValidator(lang)])
+		Promise.all([file.text(), Validator.getProjectValidator(lang)])
 			.then(([text, validateProjectFunction]) => {
 				//init validateProjects
 				const validateProject = validateProjectFunction
@@ -125,7 +125,7 @@ export default function FileValidator(): React.ReactElement {
 			console.log('Converted Excel data:', jsonData);
 
 			// Validierung mit dem Core Validator
-			const validator = getCoreValidator(lang);
+			const validator = Validator.getCoreValidator(lang);
 			validator
 				.then(coreValidate => {
 					const allErrors = jsonData.map((row, index) => {
@@ -202,7 +202,7 @@ export default function FileValidator(): React.ReactElement {
 
 	const validateParsedData = async (data: any[]) => {
 		try {
-			const validateProject = await getProjectValidator(lang)
+			const validateProject = await Validator.getProjectValidator(lang)
 			// Validate each row in the CSV/Excel data, flatMap sonst ist allErrors Object nicht 0 von der Länge bei keinen fehlern
 			const allErrors = data
 				.flatMap((row, index) => {
