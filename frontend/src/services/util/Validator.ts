@@ -3,101 +3,114 @@ import addFormats from "ajv-formats";
 import { SupportedLangs } from "./Utils.ts";
 import instanceofDef from "ajv-keywords/dist/definitions/instanceof";
 import ajvKeywords from "ajv-keywords";
-/**
- * Load schemas from the public/schemas directory
- * Schemas are copied there during build from model/schema/
- */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-async function loadAllSchemas(lang: SupportedLangs): Promise<{ feature: any, core: any }> {
-    try {
-        const [featureResponse, coreResponse] = await Promise.all([
-            fetch(`schemas/feature_project_schema.json`),
-            fetch(`schemas/project_core_schema_${lang}.json`)
-        ]);
 
-        if (!featureResponse.ok || !coreResponse.ok) {
-            throw new Error(`Failed to load schemas`);
+
+/**
+ * Validator class providing static methods to create AJV validators
+ * for project location model schemas.
+ */
+export default class Validator {
+
+    /**
+     * Load both feature and core schemas from the public/schemas directory
+     */
+
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    private static async loadAllSchemas(lang: SupportedLangs): Promise<{ feature: any; core: any }> {
+        try {
+            const [featureResponse, coreResponse] = await Promise.all([
+                fetch(`schemas/feature_project_schema.json`),
+                fetch(`schemas/project_core_schema_${lang}.json`)
+            ]);
+
+            if (!featureResponse.ok || !coreResponse.ok) {
+                throw new Error(`Failed to load schemas`);
+            }
+
+            const feature = await featureResponse.json();
+            const core = await coreResponse.json();
+
+            return { feature, core };
+        } catch (error) {
+            console.error(`Error loading all-schemas for language ${lang}:`, error);
+            throw new Error(`Cannot load validation schemas - please check your setup`);
+        }
+    }
+
+    /**
+     * Load only the core schema for a given language
+     */
+
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    private static async loadCoreSchemas(lang: SupportedLangs): Promise<any> {
+        try {
+            const [coreResponse] = await Promise.all([
+                fetch(`schemas/project_core_schema_${lang}.json`)
+            ]);
+
+            if (!coreResponse.ok) {
+                throw new Error(`Failed to load core-schema`);
+            }
+
+            return await coreResponse.json();
+        } catch (error) {
+            console.error(`Error loading core-schema for language ${lang}:`, error);
+            throw new Error(`Cannot load validation core-schemas - please check your setup`);
+        }
+    }
+
+    /**
+     * Create a configured AJV instance with formats and instanceof keyword support
+     */
+    private static createAjv(): Ajv {
+        const ajv = new Ajv({ allErrors: true });
+        addFormats(ajv);
+        ajvKeywords(ajv, ["instanceof"]);
+        instanceofDef.CONSTRUCTORS["Date"] = Date;
+        return ajv;
+    }
+
+    /**
+     * Create an AJV validator for the core schema (properties only)
+     */
+    static async getCoreValidator(lang: SupportedLangs): Promise<ValidateFunction<unknown>> {
+        if (lang !== "en" && lang !== "fr") {
+            throw new Error(`Unsupported language: ${lang}`);
         }
 
-        const feature = await featureResponse.json();
-        const core = await coreResponse.json();
+        const core = await Validator.loadCoreSchemas(lang);
+        const ajv = Validator.createAjv();
 
-        return { feature, core };
-    } catch (error) {
-        console.error(`Error loading all-schemas for language ${lang}:`, error);
-        throw new Error(`Cannot load validation schemas - please check your setup`);
-    }
-}
+        ajv.addSchema(core);
 
-async function loadCoreSchemas(lang: SupportedLangs): Promise<any> {
-    try {
-        const [coreResponse] = await Promise.all([
-            fetch(`schemas/project_core_schema_${lang}.json`)
-        ]);
-
-        if (!coreResponse.ok) {
-            throw new Error(`Failed to load core-schema`);
+        const validator = ajv.getSchema("project_core_schema.json");
+        if (!validator) {
+            throw new Error("Failed to compile validation core-schema");
         }
 
-        return await coreResponse.json();
-
-    } catch (error) {
-        console.error(`Error loading core-schema for language ${lang}:`, error);
-        throw new Error(`Cannot load validation core-schemas - please check your setup`);
-    }
-}
-
-export async function getCoreValidator(lang: SupportedLangs): Promise<ValidateFunction<unknown>> {
-    if (lang !== "en" && lang !== "fr") {
-        throw new Error(`Unsupported language: ${lang}`);
+        return validator;
     }
 
-    const  core  = await loadCoreSchemas(lang);
+    /**
+     * Create an AJV validator for the full feature project schema
+     * Automatically resolves the project_core_schema reference based on language
+     */
+    static async getProjectValidator(lang: SupportedLangs): Promise<ValidateFunction<unknown>> {
+        if (lang !== "en" && lang !== "fr") {
+            throw new Error(`Unsupported language: ${lang}`);
+        }
 
-    // Create AJV instance and add both schemas
-    const ajv = new Ajv({ allErrors: true });
-    addFormats(ajv);
-    ajvKeywords(ajv, ["instanceof"]); // nur das benötigte Keyword laden
-    instanceofDef.CONSTRUCTORS["Date"] = Date;
+        const { feature, core } = await Validator.loadAllSchemas(lang);
+        const ajv = Validator.createAjv();
 
+        ajv.addSchema(core);
+        ajv.addSchema(feature);
 
-    // Add the core schema first (it's referenced by feature schema)
-    ajv.addSchema(core);
+        const validator = ajv.getSchema("feature_project_schema");
+        if (!validator) {
+            throw new Error("Failed to compile validation schema");
+        }
 
-    // Get the validator for feature_project_schema
-    const validator = ajv.getSchema("project_core_schema.json");
-    if (!validator) {
-        throw new Error("Failed to compile validation core-schema");
+        return validator;
     }
-
-    return validator;
-}
-/**
- * Create an AJV validator function for the given language
- * Automatically resolves the project_core_schema reference based on language
- */
-export async function getProjectValidator(lang: SupportedLangs): Promise<ValidateFunction<unknown>> {
-    if (lang !== "en" && lang !== "fr") {
-        throw new Error(`Unsupported language: ${lang}`);
-    }
-
-    const { feature, core } = await loadAllSchemas(lang);
-
-    // Create AJV instance and add both schemas
-    const ajv = new Ajv({ allErrors: true });
-    addFormats(ajv);
-    ajvKeywords(ajv, ["instanceof"]); // nur das benötigte Keyword laden
-    instanceofDef.CONSTRUCTORS["Date"] = Date;
-
-    // Add the core schema first (it's referenced by feature schema)
-    ajv.addSchema(core);
-    ajv.addSchema(feature);
-
-    // Get the validator for feature_project_schema
-    const validator = ajv.getSchema("feature_project_schema");
-    if (!validator) {
-        throw new Error("Failed to compile validation schema");
-    }
-
-    return validator;
 }
