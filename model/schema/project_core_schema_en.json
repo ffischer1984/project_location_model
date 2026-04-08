@@ -4,10 +4,8 @@
   "description": "This schema defines the structure of the project location model. It is used to validate the project location data provided by the KfW counterpart.",
   "properties": {
     "scheme_version": {
-      "type": "string",
-      "enum": [
-        "3.0"
-      ]
+      "enum": ["3.0"],
+      "type": "string"
     },
     "donor_project_no": {
       "description": "Every project location must be assigned to its respective BMZ project number.",
