@@ -39,6 +39,7 @@ export default function FileValidator(): React.ReactElement {
 	const [openNoSheetDialog, setOpenNoSheetDialog] = React.useState(false);
 	const [inProNumbers, setInProNumbers] = useState<Set<string> | null>(null);
 	const [isProcessing, setIsProcessing] = useState(false);
+	const [isDataValid, setIsDataValid] = useState(false);
 
 
 	function handleCSVFiles(data: string | ArrayBuffer | null | undefined) {
@@ -82,10 +83,12 @@ export default function FileValidator(): React.ReactElement {
 							.filter(Utils.notNull); // Remove invalid features
 						if (transformedFeatures.length === geoJsonData.features.length) {
 							setValidationResult("GeoJSON FeatureCollection Data is valid!");
+							setIsDataValid(true)
 						} else {
 							setValidationResult(
 								"Error: Some features in the GeoJSON FeatureCollection failed validation."
 							);
+							setIsDataValid(false)
 						}
 
 						// Set the valid features in the state
@@ -97,6 +100,7 @@ export default function FileValidator(): React.ReactElement {
 					}
 					default: {
 						setValidationResult("Error: GeoJSON file must be a Feature or FeatureCollection.");
+						setIsDataValid(false)
 						return;
 					}
 				}
@@ -113,6 +117,7 @@ export default function FileValidator(): React.ReactElement {
 		setValidationResult(null);
 		setOpenNoSheetDialog(false)
 		setEnableEMailButton(false)
+		setIsDataValid(false)
 
 	};
 	async function handleExcelFiles(
@@ -224,11 +229,11 @@ export default function FileValidator(): React.ReactElement {
 					setValidationResult("Something terrible happend, we've inpro-nos which are null or undefined and they passed our validation. Please check your data again and send this crazy dataset to the it-support (us), please.")
 					return;
 				}
-				setEnableEMailButton(true)
+				setIsDataValid(true)
 				setInProNumbers(new Set(localInproNumbers))
 			} else {
 				setValidationResult(allErrors.join("\n"));
-				setEnableEMailButton(false)
+				setIsDataValid(false)
 			}
 
 		} catch (e) {
@@ -238,6 +243,7 @@ export default function FileValidator(): React.ReactElement {
 	};
 
 	const downloadProcessed = () => {
+		setEnableEMailButton(true)
 		const blob = new Blob([JSON.stringify(geoJsonDataWrap)], { type: 'application/geo+json' });
 		saveAs(blob, 'validated_data.geojson');
 	};
@@ -294,13 +300,13 @@ export default function FileValidator(): React.ReactElement {
 				onChange={handleFileUpload}
 				title={"File upload"}
 			/>
-			<SendMailButton sx={{ ml: 1.5 }} isEnabled={enableEMailButton} {...(inProNumbers ? { inProNumbers: [...inProNumbers] } : {})} />
 			<Button
 				sx={{ ml: 1.5 }}
 				variant={"contained"}
-				disabled={!enableEMailButton}
+				disabled={!isDataValid}
 				onClick={downloadProcessed}
 			>Download GeoJSON</Button>
+			<SendMailButton sx={{ ml: 1.5 }} isEnabled={enableEMailButton} {...(inProNumbers ? { inProNumbers: [...inProNumbers] } : {})} />
 			<Button target="_blank" href={"https://github.com/mapme-initiative/project_location_model/issues"} sx={{ ml: 1.5 }} variant={"contained"} color={"error"}>report Issue</Button>
 		</header>
 
