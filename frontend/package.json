@@ -38,7 +38,7 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-leaflet": "5.0.0",
-    "styled-components": "^6.1.19"
+    "styled-components": "^6.3.12"
   },
   "devDependencies": {
     "@apidevtools/json-schema-ref-parser": "^14.2.1",
