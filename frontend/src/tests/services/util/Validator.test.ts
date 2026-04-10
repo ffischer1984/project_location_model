@@ -1,15 +1,9 @@
 import { describe, expect, it, jest, beforeEach } from "@jest/globals";
 import Validator from "../../../services/util/Validator.ts";
-import Utils from "../../../services/util/Utils.ts";
 import validateDataEng from "../../assets/validate_en.json";
 import validateDataFr from "../../assets/validate_data_fr.json";
 import * as fs from "fs";
 import * as path from "path";
-
-// ISO-Datetime-Strings in echte Date-Objekte konvertieren (für instanceof: "Date" im Schema)
-function withDates<T>(data: T): T {
-    return JSON.parse(JSON.stringify(data), Utils.toDateObj);
-}
 
 // Mock fetch for testing - simulates loading from public/schemas/
 const mockFetch = (url: string) => {
@@ -49,7 +43,7 @@ describe("getProjectValidator", () => {
         const validator = await Validator.getProjectValidator("en") as any;
         expect(typeof validator).toBe("function");
 
-        const valid = validator(withDates(validateDataEng));
+        const valid = validator(validateDataEng);
         const invalid = validator({});
         expect(valid).toBe(true);
         expect(invalid).toBe(false);
@@ -61,7 +55,7 @@ describe("getProjectValidator", () => {
         const validator = await Validator.getProjectValidator("fr") as any;
         expect(typeof validator).toBe("function");
 
-        const valid = validator(withDates(validateDataFr));
+        const valid = validator(validateDataFr);
         const invalid = validator({});
         expect(valid).toBe(true);
         expect(invalid).toBe(false);
@@ -85,7 +79,7 @@ describe("getProjectValidator", () => {
         global.fetch = jest.fn((url) => mockFetch(url as string)) as any;
 
         const validator = await Validator.getProjectValidator("en") as any;
-        const ok = validator(withDates(validateDataEng));
+        const ok = validator(validateDataEng);
         const bad = validator({ other: "x" });
         expect(ok).toBe(true);
         expect(bad).toBe(false);
@@ -106,7 +100,7 @@ describe("getProjectValidator", () => {
         global.fetch = jest.fn((url) => mockFetch(url as string)) as any;
         const validator = await Validator.getProjectValidator("en") as any;
 
-        const wrongType = { ...withDates(validateDataEng), type: "FeatureCollection" };
+        const wrongType = { ...validateDataEng, type: "FeatureCollection" };
         expect(validator(wrongType)).toBe(false);
     });
 
@@ -114,7 +108,7 @@ describe("getProjectValidator", () => {
         global.fetch = jest.fn((url) => mockFetch(url as string)) as any;
         const validator = await Validator.getProjectValidator("en") as any;
 
-        const nullGeometry = { ...withDates(validateDataEng), geometry: null };
+        const nullGeometry = { ...validateDataEng, geometry: null };
         expect(validator(nullGeometry)).toBe(true);
     });
 
@@ -122,20 +116,30 @@ describe("getProjectValidator", () => {
         global.fetch = jest.fn((url) => mockFetch(url as string)) as any;
         const validator = await Validator.getProjectValidator("en") as any;
 
-        const base = withDates(validateDataEng);
         const invalidEnum = {
-            ...base,
-            properties: { ...base.properties, geographic_exactness: "ungültig" }
+            ...validateDataEng,
+            properties: { ...validateDataEng.properties, geographic_exactness: "ungültig" }
         };
         expect(validator(invalidEnum)).toBe(false);
     });
 
-    it("fails when date fields are strings instead of Date objects", async () => {
+    it("validates date fields as ISO strings", async () => {
         global.fetch = jest.fn((url) => mockFetch(url as string)) as any;
         const validator = await Validator.getProjectValidator("en") as any;
 
-        // Raw JSON ohne withDates() – Datumsfelder bleiben ISO-Strings
-        expect(validator(validateDataEng)).toBe(false);
+        // ISO-Datetime-Strings sind jetzt der erwartete Typ
+        expect(validator(validateDataEng)).toBe(true);
+    });
+
+    it("fails when date field has an invalid format", async () => {
+        global.fetch = jest.fn((url) => mockFetch(url as string)) as any;
+        const validator = await Validator.getProjectValidator("en") as any;
+
+        const invalidDate = {
+            ...validateDataEng,
+            properties: { ...validateDataEng.properties, activity_start_date: "not-a-date" }
+        };
+        expect(validator(invalidDate)).toBe(false);
     });
 
     it("errors array is populated on validation failure", async () => {
@@ -152,7 +156,7 @@ describe("getProjectValidator", () => {
         const validator = await Validator.getProjectValidator("en") as any;
 
         validator({}); // Fehler auslösen
-        validator(withDates(validateDataEng)); // valide Daten – Fehler müssen gecleared werden
+        validator(validateDataEng); // valide Daten – Fehler müssen gecleared werden
         expect(validator.errors).toBeNull();
     });
 });
@@ -178,7 +182,7 @@ describe("getCoreValidator", () => {
         global.fetch = jest.fn((url) => mockFetch(url as string)) as any;
         const validator = await Validator.getCoreValidator("en") as any;
 
-        const valid = validator(withDates(validateDataEng.properties));
+        const valid = validator(validateDataEng.properties);
         expect(valid).toBe(true);
         expect(validator.errors).toBeNull();
     });
@@ -187,7 +191,7 @@ describe("getCoreValidator", () => {
         global.fetch = jest.fn((url) => mockFetch(url as string)) as any;
         const validator = await Validator.getCoreValidator("fr") as any;
 
-        const valid = validator(withDates(validateDataFr.properties));
+        const valid = validator(validateDataFr.properties);
         expect(valid).toBe(true);
         expect(validator.errors).toBeNull();
     });
@@ -196,7 +200,7 @@ describe("getCoreValidator", () => {
         global.fetch = jest.fn((url) => mockFetch(url as string)) as any;
         const validator = await Validator.getCoreValidator("en") as any;
 
-        const { donor_project_no: _, ...withoutDonorNo } = withDates(validateDataEng.properties) as any;
+        const { donor_project_no: _, ...withoutDonorNo } = validateDataEng.properties as any;
         expect(validator(withoutDonorNo)).toBe(false);
         expect(validator.errors?.some((e: any) => e.params?.missingProperty === "donor_project_no")).toBe(true);
     });
@@ -205,7 +209,7 @@ describe("getCoreValidator", () => {
         global.fetch = jest.fn((url) => mockFetch(url as string)) as any;
         const validator = await Validator.getCoreValidator("en") as any;
 
-        const { location_name: _, ...rest } = withDates(validateDataEng.properties) as any;
+        const { location_name: _, ...rest } = validateDataEng.properties as any;
         expect(validator(rest)).toBe(false);
     });
 
@@ -213,7 +217,7 @@ describe("getCoreValidator", () => {
         global.fetch = jest.fn((url) => mockFetch(url as string)) as any;
         const validator = await Validator.getCoreValidator("en") as any;
 
-        const invalidData = { ...withDates(validateDataEng.properties), geographic_exactness: "invalid" };
+        const invalidData = { ...validateDataEng.properties, geographic_exactness: "invalid" };
         expect(validator(invalidData)).toBe(false);
     });
 
@@ -221,23 +225,23 @@ describe("getCoreValidator", () => {
         global.fetch = jest.fn((url) => mockFetch(url as string)) as any;
         const validator = await Validator.getCoreValidator("en") as any;
 
-        const invalidData = { ...withDates(validateDataEng.properties), location_activity_status: "Running" };
+        const invalidData = { ...validateDataEng.properties, location_activity_status: "Running" };
         expect(validator(invalidData)).toBe(false);
     });
 
-    it("fails when date field is a string instead of a Date object", async () => {
+    it("fails when date field has an invalid format", async () => {
         global.fetch = jest.fn((url) => mockFetch(url as string)) as any;
         const validator = await Validator.getCoreValidator("en") as any;
 
-        // Rohe Properties ohne withDates() – Datumsfelder bleiben ISO-Strings
-        expect(validator(validateDataEng.properties)).toBe(false);
+        const invalidData = { ...validateDataEng.properties, activity_start_date: "invalid-date" };
+        expect(validator(invalidData)).toBe(false);
     });
 
     it("fails when donor_project_no is a string instead of a number", async () => {
         global.fetch = jest.fn((url) => mockFetch(url as string)) as any;
         const validator = await Validator.getCoreValidator("en") as any;
 
-        const invalidData = { ...withDates(validateDataEng.properties), donor_project_no: "29937" };
+        const invalidData = { ...validateDataEng.properties, donor_project_no: "29937" };
         expect(validator(invalidData)).toBe(false);
     });
 

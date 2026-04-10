@@ -165,9 +165,9 @@ export default class Utils {
                 const cellValue = row[colIndex];
                 if (cellValue == null) continue;
 
-                // Gleiche Typ-Behandlung wie bisher
+                // Dates als YYYY-MM-DD Strings ausgeben (kompatibel mit format: "date" im Schema)
                 if (cellValue instanceof Date) {
-                    rowData[header] = cellValue;
+                    rowData[header] = cellValue.toISOString().split('T')[0];
                 } else if (typeof cellValue === 'object' && 'richText' in cellValue) {
                     rowData[header] = cellValue.richText.map((t: any) => t.text).join('');
                 } else if (typeof cellValue === 'object' && 'result' in cellValue) {

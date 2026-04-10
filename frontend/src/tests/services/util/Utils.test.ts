@@ -356,14 +356,15 @@ describe("Utils", () => {
             expect(Array.isArray(result)).toBe(true);
             expect(result.length).toBeGreaterThan(0);
         });
-        it("returns Date objects for date fields", async () => {
+        it("returns date strings in YYYY-MM-DD format for date fields", async () => {
             const data = loadFile("Project_Location_Data_Template_EN_V03.xlsx");
             const result = await Utils.excelJSToJSON(data, "en") as any[];
             const dateFields = ["activity_start_date", "activity_end_date", "date_of_data_collection"];
             const firstRow = result[0];
             const foundDateField = dateFields.find(f => firstRow[f] !== undefined);
             if (foundDateField) {
-                expect(firstRow[foundDateField]).toBeInstanceOf(Date);
+                expect(typeof firstRow[foundDateField]).toBe("string");
+                expect(firstRow[foundDateField]).toMatch(/^\d{4}-\d{2}-\d{2}$/);
             }
         });
         it("rejects when the expected sheet is missing", async () => {

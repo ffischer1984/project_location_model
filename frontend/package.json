@@ -38,14 +38,14 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-leaflet": "5.0.0",
-    "styled-components": "^6.1.19"
+    "styled-components": "^6.3.12"
   },
   "devDependencies": {
     "@apidevtools/json-schema-ref-parser": "^14.2.1",
     "@babel/preset-env": "^7.28.3",
-    "@babel/preset-typescript": "^7.27.1",
+    "@babel/preset-typescript": "^7.28.5",
     "@jest/globals": "^30.1.2",
-    "@testing-library/jest-dom": "^6.8.0",
+    "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@types/jest": "^30.0.0",
     "@types/leaflet": "^1.9.20",
@@ -54,7 +54,7 @@
     "@types/papaparse": "^5.3.16",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
-    "@typescript-eslint/eslint-plugin": "^8.57.0",
+    "@typescript-eslint/eslint-plugin": "^8.58.1",
     "@typescript-eslint/parser": "^8.57.0",
     "@vitejs/plugin-react-swc": "^3.7.0",
     "baseline-browser-mapping": "^2.10.0",
@@ -69,12 +69,12 @@
     "leaflet.fullscreen": "^3.0.2",
     "papaparse": "^5.5.3",
     "react-router-dom": "^7.7.0",
-    "sass": "^1.77.2",
+    "sass": "^1.99.0",
     "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "vite": "^7.3.1",
+    "vite": "^7.3.2",
     "vite-plugin-eslint": "^1.8.1",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   }

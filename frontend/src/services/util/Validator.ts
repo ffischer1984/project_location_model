@@ -1,8 +1,6 @@
 import Ajv, { ValidateFunction } from "ajv";
 import addFormats from "ajv-formats";
 import { SupportedLangs } from "./Utils.ts";
-import instanceofDef from "ajv-keywords/dist/definitions/instanceof";
-import ajvKeywords from "ajv-keywords";
 
 
 /**
@@ -60,13 +58,11 @@ export default class Validator {
     }
 
     /**
-     * Create a configured AJV instance with formats and instanceof keyword support
+     * Create a configured AJV instance with formats support
      */
     private static createAjv(): Ajv {
         const ajv = new Ajv({ allErrors: true });
         addFormats(ajv);
-        ajvKeywords(ajv, ["instanceof"]);
-        instanceofDef.CONSTRUCTORS["Date"] = Date;
         return ajv;
     }
 
