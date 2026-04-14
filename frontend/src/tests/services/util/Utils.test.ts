@@ -80,7 +80,7 @@ describe("Utils", () => {
         it("puts all non-lat/lon fields in properties", () => {
             const row = { latitude: "1", longitude: "2", name: "x", value: "y" };
             const feature = Utils.toGeoFeature(row);
-            expect(feature.properties).toEqual({ name: "x", value: "y", latitude: "1", longitude: "2", });
+            expect(feature.properties).toEqual({  latitude: 1, longitude: 2, name: "x", value: "y" });
         });
         it("returns NaN coordinates for non-numeric lat/lon", () => {
             const row = { latitude: "invalid", longitude: "also-invalid" };
