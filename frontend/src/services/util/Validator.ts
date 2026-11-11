@@ -36,6 +36,26 @@ export default class Validator {
     }
 
     /**
+     * Returns the raw core schema (property names, types, enums, required) for a given language.
+     */
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    static async getCoreSchema(lang: SupportedLangs): Promise<any> {
+        return Validator.loadCoreSchemas(lang);
+    }
+
+    /**
+     * Create an AJV validator for the core schema in which the given properties are all mandatory.
+     * Used by the attribute table of drawn geometries, where every column has to be filled.
+     */
+    static createCoreValidatorWithRequired(coreSchema: any, required: string[]): ValidateFunction<unknown> {
+        const ajv = Validator.createAjv();
+        return ajv.compile({
+            ...coreSchema,
+            required: [...new Set([...(coreSchema.required ?? []), ...required])],
+        });
+    }
+
+    /**
      * Load only the core schema for a given language
      */
 

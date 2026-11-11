@@ -108,3 +108,162 @@
   }
 }
 
+
+// ============================================================
+// Attribute table (new location collection)
+// ============================================================
+.attribute-table {
+  &__progress {
+    font-size: 12px;
+    font-weight: 600;
+    color: #b26a00;
+    background: rgba(255, 152, 0, 0.15);
+    border-radius: 4px;
+    padding: 6px 8px;
+    margin-bottom: 6px;
+
+    &--complete {
+      color: #2e7d32;
+      background: rgba(0, 128, 0, 0.2);
+    }
+  }
+
+  &__input {
+    box-sizing: border-box;
+    width: 100%;
+    font-family: inherit;
+    font-size: 13px;
+    padding: 5px 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: #fff;
+    color: #222;
+
+    &[readonly] {
+      background: #f5f5f5;
+      color: #666;
+    }
+
+    &--error {
+      border-color: #d32f2f;
+    }
+  }
+
+  textarea.attribute-table__input {
+    resize: vertical;
+  }
+
+  &__required {
+    color: #d32f2f;
+  }
+
+  &__row {
+    position: relative;
+  }
+
+  // The label and the help icon share the first line; the description appears on hover/focus.
+  &__labelrow {
+    display: flex;
+    align-items: center;
+    margin-bottom: 2px;
+
+    .map-sidebar__label {
+      margin-bottom: 0;
+    }
+  }
+
+  &__help {
+    display: inline-flex;
+    margin-left: 6px;
+    font-size: 15px;
+    vertical-align: middle;
+    color: #1976d2;
+    cursor: help;
+    outline: none;
+
+    &:hover .attribute-table__tooltip,
+    &:focus .attribute-table__tooltip {
+      visibility: visible;
+      opacity: 1;
+    }
+  }
+
+  &__tooltip {
+    position: absolute;
+    top: 22px;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.12s;
+    padding: 8px 10px;
+    border-radius: 4px;
+    background: rgba(40, 40, 40, 0.95);
+    color: #fff;
+    font-size: 12px;
+    font-weight: normal;
+    line-height: 1.4;
+    text-transform: none;
+    letter-spacing: normal;
+    white-space: pre-line;
+    pointer-events: none;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  }
+
+  &__error {
+    margin-top: 3px;
+    font-size: 12px;
+    color: #d32f2f;
+  }
+}
+
+// ============================================================
+// Geoman toolbar – horizontal, on the same row as the fullscreen button
+// ============================================================
+.leaflet-top.leaflet-left .leaflet-pm-toolbar {
+  position: absolute;
+  top: 0;
+  left: 44px;
+  display: flex;
+  flex-direction: row;
+
+  .button-container {
+    position: relative;
+    display: flex;
+
+    a.leaflet-buttons-control-button {
+      border-bottom: none;
+      border-right: 1px solid #ccc;
+      border-radius: 0;
+    }
+
+    &:first-child a.leaflet-buttons-control-button {
+      border-top-left-radius: 2px;
+      border-bottom-left-radius: 2px;
+    }
+
+    &:last-child a.leaflet-buttons-control-button {
+      border-right: none;
+      border-top-right-radius: 2px;
+      border-bottom-right-radius: 2px;
+    }
+
+    // action buttons (Finish, Cancel, ...) open below the toolbar instead of to the right
+    .leaflet-pm-actions-container {
+      top: 100%;
+      left: 0;
+      margin-top: 4px;
+      flex-direction: column;
+      white-space: nowrap;
+
+      .leaflet-pm-action {
+        border-radius: 2px;
+      }
+    }
+
+    &.active .leaflet-pm-actions-container {
+      display: flex;
+    }
+  }
+}

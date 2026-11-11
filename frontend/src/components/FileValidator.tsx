@@ -1,8 +1,10 @@
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 import './scss/FileValidator.scss'
 
-import React, {useState} from "react";
+import React, {useEffect, useState} from "react";
 import MapComponent from "./MapComponent";
+import FeatureAttributeTable from "./FeatureAttributeTable.tsx";
+import {useLocationCollection} from "./hooks/useLocationCollection.ts";
 import Utils, {OGMFileTypes, SupportedLangs} from "../services/util/Utils.ts";
 import {transformCsvToLocation} from "../services/util/FileConversionMethods";
 import {saveAs} from 'file-saver';
@@ -19,6 +21,7 @@ import {
 	Select
 } from '@mui/material';
 
+import AddLocationAltIcon from '@mui/icons-material/AddLocationAlt';
 import SendMailButton from "./SendMailButton.tsx";
 import Validator from "../services/util/Validator.ts";
 import FileUpload from "./FileUpload.tsx";
@@ -114,6 +117,14 @@ export default function FileValidator(): React.ReactElement {
 	const [inProNumbers, setInProNumbers] = useState<Set<string> | null>(null);
 	const [isProcessing, setIsProcessing] = useState(false);
 	const [isDataValid, setIsDataValid] = useState(false);
+	const [downloadedCollection, setDownloadedCollection] = useState<unknown>(null);
+	const collection = useLocationCollection(lang);
+
+	useEffect(() => {
+		if (collection.loadError) {
+			setValidationResult(`Error: ${collection.loadError}`);
+		}
+	}, [collection.loadError]);
 
 
 	function handleCSVFiles(data: string | ArrayBuffer | null | undefined) {
@@ -229,7 +240,20 @@ export default function FileValidator(): React.ReactElement {
 		setOpenNoSheetDialog(false)
 		setEnableEMailButton(false)
 		setIsDataValid(false)
+		collection.stop()
 
+	};
+
+	const startNewCollection = () => {
+		// uploaded features stay on the map and become editable members of the new collection
+		const uploaded = geoJsonDataWrap?.features ?? [];
+		setValidationResult(null);
+		setValidationWarnings([]);
+		setOpenNoSheetDialog(false);
+		setEnableEMailButton(false);
+		setIsDataValid(false);
+		setDownloadedCollection(null);
+		collection.start(uploaded);
 	};
 	async function handleExcelFiles(
 		data: string | ArrayBuffer | null | undefined
@@ -372,11 +396,31 @@ export default function FileValidator(): React.ReactElement {
 	};
 
 	const downloadProcessed = () => {
-		setEnableEMailButton(true)
-		const ordered = Utils.orderFeatureCollection(geoJsonDataWrap);
+		if (collection.active && !collection.collection) return;
+		if (collection.active) setDownloadedCollection(collection.collection)
+		else setEnableEMailButton(true)
+		const ordered = Utils.orderFeatureCollection(collection.active ? collection.collection : geoJsonDataWrap);
 		const blob = new Blob([JSON.stringify(ordered)], { type: 'application/geo+json' });
 		saveAs(blob, buildValidatedGeoJsonFilename(ordered));
 	};
+
+	const incompleteCount = collection.drafts.filter(d => Object.keys(collection.errorsById[d.id] ?? { pending: '' }).length > 0).length;
+	const selectedDraft = collection.selected;
+	const editorPanel = collection.active && selectedDraft ? {
+		title: selectedDraft.values.location_name?.trim() || `${selectedDraft.id.startsWith('existing-') ? 'Location' : 'New location'} (${selectedDraft.geometry.type})`,
+		onClose: () => collection.select(null),
+		body: (
+			<FeatureAttributeTable
+				fields={collection.selectedFields}
+				values={selectedDraft.values}
+				errors={collection.errorsById[selectedDraft.id] ?? {}}
+				touched={selectedDraft.touched}
+				onChange={(name, value) => collection.changeValue(selectedDraft.id, name, value)}
+				onBlur={name => collection.touchField(selectedDraft.id, name)}
+			/>
+		),
+	} : null;
+
 	return <div className='file_validator'>
 
 		<Dialog
@@ -417,12 +461,14 @@ export default function FileValidator(): React.ReactElement {
 				<li>Make sure to attach the latest validated (and valid) version of the file to the email to your project counterpart at KfW.</li>
 				<li>In case of any problems or feature requests create an issue via <a href={"https://github.com/mapme-initiative/project_location_model/issues"}>REPORT ISSUE</a>.</li>
 			</ul>
+			<div className="file_validator__actions">
 			<FormControl variant="outlined" size="small" sx={{ minWidth: 200 }}>
 				<InputLabel id="lang-select-label">LANGUAGE (TEMPLATE)</InputLabel>
 				<Select
 					labelId="lang-select-label"
 					value={lang}
 					onChange={e => setLang(Utils.sanitizeLang(String(e.target.value)))}
+					disabled={collection.active}
 					label="LANGUAGE (TEMPLATE)"
 				>
 				<MenuItem value="en">English</MenuItem>
@@ -432,18 +478,31 @@ export default function FileValidator(): React.ReactElement {
 				</Select>
 			</FormControl>
 			<FileUpload
-				sx={{ ml: 1.5 }}
+				sx={{}}
 				onChange={handleFileUpload}
 				title={"File upload"}
 			/>
 			<Button
-				sx={{ ml: 1.5 }}
+				
 				variant={"contained"}
-				disabled={!isDataValid}
+				startIcon={<AddLocationAltIcon />}
+				onClick={startNewCollection}
+			>Create new location collection</Button>
+			<Button
+				
+				variant={"contained"}
+				disabled={collection.active ? !collection.isComplete : !isDataValid}
 				onClick={downloadProcessed}
 			>Download GeoJSON</Button>
-			<SendMailButton sx={{ ml: 1.5 }} isEnabled={enableEMailButton} {...(inProNumbers ? { inProNumbers: [...inProNumbers] } : {})} />
-			<Button target="_blank" href={"https://github.com/mapme-initiative/project_location_model/issues"} sx={{ ml: 1.5 }} variant={"contained"} color={"error"}>report Issue</Button>
+			<SendMailButton
+				
+				isEnabled={collection.active
+					? collection.isComplete && !!collection.collection && downloadedCollection === collection.collection
+					: enableEMailButton}
+				{...(collection.active ? { inProNumbers: collection.projectNumbers } : inProNumbers ? { inProNumbers: [...inProNumbers] } : {})}
+			/>
+			<Button target="_blank" href={"https://github.com/mapme-initiative/project_location_model/issues"}  variant={"contained"} color={"error"}>report Issue</Button>
+			</div>
 		</header>
 
 
@@ -501,8 +560,31 @@ export default function FileValidator(): React.ReactElement {
 		{/* ____________________ Map ____________________ */}
 		{isProcessing && (<Processing/>)}
 		<div className='file_validator_map' style={{ height: '400px' }}>
-			<MapComponent geoJsonData={geoJsonDataWrap} />
+			<MapComponent
+				geoJsonData={collection.active ? null : geoJsonDataWrap}
+				drawingEnabled={collection.ready}
+				drawingSessionKey={collection.sessionKey}
+				drawingInitial={collection.drafts}
+				drawHandlers={{
+					onCreated: collection.addGeometry,
+					onChanged: collection.updateGeometry,
+					onRemoved: collection.removeGeometry,
+					onSelected: collection.select,
+				}}
+				editorPanel={editorPanel}
+			/>
 		</div>
+
+		{collection.active && (
+			<p>
+				{collection.drafts.length === 0
+					? "Use the drawing tools on the map (point, line, polygon, rectangle) to add a location. An attribute table opens after each geometry. "
+					: collection.isComplete
+						? "All attribute tables are complete. You can now download the GeoJSON, send the email or draw another geometry. "
+						: `${incompleteCount} of ${collection.drafts.length} location(s) have missing or invalid attributes. Click a geometry on the map to edit its attribute table. `}
+				The language of the template cannot be changed while a collection is being created.
+			</p>
+		)}
 
 
 
