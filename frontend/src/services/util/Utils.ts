@@ -14,7 +14,7 @@ export enum OGMFileTypes {
     GEOJSON = "application/geo+json"
 }
 
-export type SupportedLangs = "en" | "fr";
+export type SupportedLangs = "en" | "fr" | "es" | "pt";
 
 // ============================================================================
 // Excel Conversion Functions
@@ -23,8 +23,100 @@ export default class Utils {
     static sheetNameMap = {
         en: "fill-me",
         fr: "fill-me Remplissez-moi",
+        es: "fill-me - relléname",
+        pt: "fill-me - preencha-me",
     };
-    static sheetNameArray: Array<string> = ["fill-me", "fill-me Remplissez-moi"];
+    static sheetNameArray: Array<string> = ["fill-me", "fill-me Remplissez-moi", "fill-me - relléname", "fill-me - preencha-me"];
+
+    private static readonly PROPERTY_ORDER_PREFIX = ['fid', 'scheme_version', 'date_of_data_collection'] as const;
+    private static readonly PROPERTY_ORDER_SUFFIX = ['latitude', 'longitude'] as const;
+
+    /** Placeholder BMZ project number used in the Excel template example row. */
+    static readonly EXAMPLE_PROJECT_NO = 123456789;
+
+    static isExampleProjectNo(value: unknown): boolean {
+        return value === Utils.EXAMPLE_PROJECT_NO || value === String(Utils.EXAMPLE_PROJECT_NO);
+    }
+
+    /**
+     * Removes template example rows (donor_project_no = 123456789).
+     * Supports flat Excel rows and GeoJSON Features (properties.donor_project_no).
+     */
+    static stripExampleRows<T extends Record<string, unknown>>(items: T[]): { items: T[]; removedCount: number } {
+        const remaining: T[] = [];
+        let removedCount = 0;
+
+        for (const item of items) {
+            const projectNo =
+                item && typeof item === 'object' && 'properties' in item && item.properties
+                    ? (item.properties as Record<string, unknown>).donor_project_no
+                    : item?.donor_project_no;
+
+            if (Utils.isExampleProjectNo(projectNo)) {
+                removedCount++;
+            } else {
+                remaining.push(item);
+            }
+        }
+
+        return { items: remaining, removedCount };
+    }
+
+    static getExampleRowsRemovedNote(removedCount: number): string | null {
+        if (removedCount <= 0) {
+            return null;
+        }
+        return 'Note: Example row(s) with project number 123456789 were removed from the validated output.';
+    }
+
+    /**
+     * Builds properties in a stable export order: fid, scheme_version,
+     * date_of_data_collection, then remaining fields in source insertion order,
+     * then latitude and longitude. Only reorders existing keys (AJV supplies defaults).
+     */
+    static buildOrderedProperties(raw: Record<string, unknown>): Record<string, unknown> {
+        const ordered: Record<string, unknown> = {};
+        const reserved = new Set<string>([...Utils.PROPERTY_ORDER_PREFIX, ...Utils.PROPERTY_ORDER_SUFFIX]);
+
+        for (const key of Utils.PROPERTY_ORDER_PREFIX) {
+            if (key in raw && raw[key] !== undefined) {
+                ordered[key] = raw[key];
+            }
+        }
+
+        for (const key of Object.keys(raw)) {
+            if (!reserved.has(key)) {
+                ordered[key] = raw[key];
+            }
+        }
+
+        for (const key of Utils.PROPERTY_ORDER_SUFFIX) {
+            if (key in raw && raw[key] !== undefined) {
+                ordered[key] = raw[key];
+            }
+        }
+
+        return ordered;
+    }
+
+    static orderFeature<T extends { properties?: Record<string, unknown> }>(feature: T): T {
+        if (!feature.properties) {
+            return feature;
+        }
+        return { ...feature, properties: Utils.buildOrderedProperties(feature.properties) };
+    }
+
+    static orderFeatureCollection<T extends { type?: string; features?: Array<{ properties?: Record<string, unknown> }> }>(
+        collection: T
+    ): T {
+        if (!collection?.features) {
+            return collection;
+        }
+        return {
+            ...collection,
+            features: collection.features.map((feature) => Utils.orderFeature(feature)),
+        };
+    }
 
     /* eslint-disable @typescript-eslint/no-explicit-any */
     static isExcelObjectWithProperties(obj: any): boolean {
@@ -52,11 +144,11 @@ export default class Utils {
                 type: "Point",
                 coordinates: [safeParseFloat(longitude), safeParseFloat(latitude)]
             },
-            properties: {
+            properties: Utils.buildOrderedProperties({
                 ...rest,
                 latitude: safeParseFloat(latitude),
-                longitude: safeParseFloat(longitude)
-            }
+                longitude: safeParseFloat(longitude),
+            }),
         };
     }
 
@@ -153,7 +245,7 @@ export default class Utils {
         const jsonData: any[] = [];
         const rowCount = worksheet.actualRowCount;
 
-        for (let rowIndex = 4; rowIndex <= rowCount; rowIndex++) {
+        for (let rowIndex = 5; rowIndex <= rowCount; rowIndex++) {
             const row = allValues[rowIndex];
             if (!row) continue; // leere Zeile (sparse array)
 
@@ -190,7 +282,7 @@ export default class Utils {
     }
 
 
-    private static useXlsxLbToConvert(data: string | ArrayBuffer, lang: "en" | "fr") {
+    private static useXlsxLbToConvert(data: string | ArrayBuffer, lang: SupportedLangs) {
 
 
         const wb = xlsx.read(
@@ -354,7 +446,19 @@ export default class Utils {
     }
 
     public static sanitizeLang(lang: string): SupportedLangs {
-        return lang === 'fr' ? 'fr' : 'en';
+        switch (lang) {
+            case 'fr':
+                return 'fr';
+            case 'es':
+                return 'es';
+            case 'pt':
+                return 'pt';
+            case 'en':
+                return 'en';
+            default:
+                console.warn(`Unsupported language "${lang}", falling back to "en"`);
+                return 'en';
+        }
     }
 
     /**

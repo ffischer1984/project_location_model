@@ -3,26 +3,26 @@
   "geometry": {
     "type": "Point",
     "coordinates": [
-      74.5987,
-      36.2945
+      74.598611,
+      36.29333
     ]
   },
   "properties": {
-    "scheme_version": "3.0",
+    "scheme_version": "4.0",
     "donor_project_no": 29937,
     "project_acronym": "HRE II",
-    "data_provider": "Integration Consulting Group SA",
-    "publishing_restrictions": "no",
+    "data_provider": "Integration Consulting",
+    "publishing_restrictions": "non",
     "date_of_data_collection": "2020-02-01",
     "related_community": "Ville de Hassanabad",
     "location_name": "Hassanabad I",
-    "location_activity_status": "Pipeline/identification",
+    "location_activity_status": "Identification",
     "activity_start_date": "2019-12-13",
     "activity_end_date": "2024-12-13",
     "activity_description": "Rehabilitation de centrale hydroelectrique",
-    "location_type_theme": "Energy",
-    "location_type_name": "hydropower plant / dam",
-    "geographic_exactness": "exact",
+    "location_type_theme": "Énergie",
+    "location_type_name": "centrale hydroélectrique / barrage",
+    "geographic_exactness": "exacte",
     "uniqueId": "2993700005"
   }
 }

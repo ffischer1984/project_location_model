@@ -43,12 +43,14 @@ For the collection of point-loctions, we currently accept submissions in **.XLSX
  
 The **.XLSX** format is best suited, if your institution does not know how to handle geospatial data and has no former experience with Geographic Information System (GIS) software. In this case you can use the most recent version of our [Excel templates](./annex1.md) to collect all relevant information.
 
+**Attention:** the template includes an example row; delete it before submitting real data.
+
 ## Collection of point-, line-, and polygon-locations using GIS software
 For the collection of point-locations, the use of **.GeoJSON** is optional but recommended for its reliability and flexibility. For the collection of line- or polygon-locations, only **.GeoJSON** format is accepted.
 
 We highlight two common cases for generating the required data: 
 
-1. **Desktop-production**: For manual data collection, we recommend using the [Excel templates](./annex1.md) to store all attributes and merging this information with spatial information (feature geometries) in a GIS software. Since the Excel templates are pre-configured, it is easier to provide data that is compliant with our data-model and pass the validation check as a way to ensure data quality. A short video tutorial (to be released soon) will demonstrate how to use the Excel template with QGIS software.
+1. **Desktop-production**: For manual data collection, we recommend using the [Excel templates](./annex1.md) to store all attributes and merging this information with spatial information (feature geometries) in a GIS software. Since the Excel templates are pre-configured, it is easier to provide data that is compliant with our data-model and pass the validation check as a way to ensure data quality. This [tutorial](https://github.com/mapme-initiative/project_location_model/blob/main/frontend/public/QGIS-create-GeoJSONs-v0.pdf) describes how to prepare geometries in QGIS and link them to the Excel template.
 
 2. **Database-extraction**: If location information is available in a geospatial database, it is possible to extract and transform the data into field-mappings that also match our requirements. In these cases, the data-model can be provided as a [JSON schema](./annex2.md). This supports batch conversions as a starting point; any missing information can then be manually added.
 
