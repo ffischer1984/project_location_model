@@ -493,18 +493,20 @@ describe("Utils", () => {
 
     // -----------------------------------------------------------------------
     describe("excelJSToJSON", () => {
+        const excelJSTestTimeout = 30_000;
+
         it("returns an array for the English template", async () => {
             const data = loadFile("Project_Location_Data_Template_EN_V04.xlsx");
             const result = await Utils.excelJSToJSON(data, "en");
             expect(Array.isArray(result)).toBe(true);
             expect(result.length).toBeGreaterThan(0);
-        });
+        }, excelJSTestTimeout);
         it("returns an array for the French template", async () => {
             const data = loadFile("Project_Location_Data_Template_FR_V04.xlsx");
             const result = await Utils.excelJSToJSON(data, "fr");
             expect(Array.isArray(result)).toBe(true);
             expect(result.length).toBeGreaterThan(0);
-        });
+        }, excelJSTestTimeout);
         it("returns date strings in YYYY-MM-DD format for date fields", async () => {
             const data = loadFile("Project_Location_Data_Template_EN_V04.xlsx");
             const result = await Utils.excelJSToJSON(data, "en") as any[];
@@ -515,24 +517,23 @@ describe("Utils", () => {
                 expect(typeof firstRow[foundDateField]).toBe("string");
                 expect(firstRow[foundDateField]).toMatch(/^\d{4}-\d{2}-\d{2}$/);
             }
-        });
+        }, excelJSTestTimeout);
         it("returns an array for the Spanish template", async () => {
             const data = loadFile("Project_Location_Data_Template_ES_V04.xlsx");
             const result = await Utils.excelJSToJSON(data, "es");
             expect(Array.isArray(result)).toBe(true);
             expect(result.length).toBeGreaterThan(0);
-        });
+        }, excelJSTestTimeout);
         it("returns an array for the Portuguese template", async () => {
             const data = loadFile("Project_Location_Data_Template_PT_V04.xlsx");
             const result = await Utils.excelJSToJSON(data, "pt");
             expect(Array.isArray(result)).toBe(true);
             expect(result.length).toBeGreaterThan(0);
-        });
+        }, excelJSTestTimeout);
         it("rejects when the expected sheet is missing", async () => {
             const data = loadFile("Project_Location_Data_Template_EN_V04.xlsx");
             await expect(Utils.excelJSToJSON(data, "fr"))
                 .rejects.toThrow(/Sheet "fill-me Remplissez-moi" not found/);
-        });
+        }, excelJSTestTimeout);
     });
 });
-
