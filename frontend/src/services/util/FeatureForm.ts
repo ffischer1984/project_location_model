@@ -12,3 +12,8 @@ export interface AttributeField {
     defaultValue?: unknown;
     required: boolean;
 }
+
+export function getDraftTitle(locationName: unknown, id: string, geometryType: string): string {
+    if (typeof locationName === "string" && locationName.trim()) return locationName.trim();
+    return `${id.startsWith("existing-") ? "Location" : "New location"} (${geometryType})`;
+}
