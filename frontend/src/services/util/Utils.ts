@@ -170,7 +170,11 @@ export default class Utils {
         // Konvertiere die Daten mit ExcelJS in ein JavaScript-Array
         // WICHTIG: Überspringe Data Validations für bessere Performance
         const wb = new ExcelJS.Workbook();
-        await wb.xlsx.load(data as ArrayBuffer, {
+        const loadWorkbook = wb.xlsx.load as unknown as (
+            workbookData: ArrayBuffer,
+            options: { ignoreNodes: string[] }
+        ) => Promise<ExcelJS.Workbook>;
+        await loadWorkbook.call(wb.xlsx, data as ArrayBuffer, {
             // Überspringe Features, die wir nicht brauchen
             ignoreNodes: [
                 'dataValidations',
@@ -228,7 +232,7 @@ export default class Utils {
         }
 
         // Einmaliger Bulk-Zugriff: komplettes Sheet als 2D-Array (1-basiert, sparse)
-        const allValues = worksheet.getSheetValues() as any[][];
+        const allValues = worksheet.getSheetValues() as unknown as any[][];
 
         // Header aus Zeile 3 lesen
         const headerRow = allValues[3];
