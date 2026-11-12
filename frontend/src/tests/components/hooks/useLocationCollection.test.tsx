@@ -14,12 +14,15 @@ describe("useLocationCollection", () => {
             properties: {
                 scheme_version: { type: "string", enum: ["4.0"] },
                 donor_project_no: { type: "integer" },
+                latitude: { type: "number", description: "Optional coordinates from spreadsheet uploads." },
+                longitude: { type: "number", description: "Optional coordinates from spreadsheet uploads." },
             },
+            required: ["scheme_version", "donor_project_no"],
         };
         jest.spyOn(Validator, "getCoreSchema").mockResolvedValue(schema as any);
 
         const { result } = renderHook(() => useLocationCollection("en"));
-        await waitFor(() => expect(result.current.selectedFields).toHaveLength(2));
+        await waitFor(() => expect(result.current.selectedFields).toHaveLength(4));
 
         act(() => {
             result.current.start();
@@ -30,6 +33,7 @@ describe("useLocationCollection", () => {
         act(() => result.current.changeValue("drawn-1", "donor_project_no", 123456789));
 
         expect(result.current.isComplete).toBe(true);
+        expect(result.current.selectedFields.find(field => field.name === "latitude")?.required).toBe(false);
         expect(result.current.collection).toEqual({
             type: "FeatureCollection",
             features: [{

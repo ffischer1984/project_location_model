@@ -62,11 +62,14 @@ export function useLocationCollection(lang: SupportedLangs) {
                     format: property.format,
                     options: property.enum?.map(String),
                     defaultValue,
-                    required: true,
+                    required: schema.required?.includes(name) ?? false,
                 } satisfies AttributeField;
             });
             setFields(schemaFields);
-            setValidate(Validator.createCoreValidatorWithRequired(schema, schemaFields.map(field => field.name)));
+            setValidate(Validator.createCoreValidatorWithRequired(
+                schema,
+                schemaFields.filter(field => field.required).map(field => field.name)
+            ));
         }).catch(error => {
             if (!cancelled) setLoadError(error instanceof Error ? error.message : String(error));
         });
