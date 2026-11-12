@@ -66,7 +66,7 @@ export function useLocationCollection(lang: SupportedLangs) {
                 } satisfies AttributeField;
             });
             setFields(schemaFields);
-            setValidate(Validator.createCoreValidatorWithRequired(
+            setValidate(() => Validator.createCoreValidatorWithRequired(
                 schema,
                 schemaFields.filter(field => field.required).map(field => field.name)
             ));

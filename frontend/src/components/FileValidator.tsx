@@ -7,6 +7,7 @@ import FeatureAttributeTable from "./FeatureAttributeTable.tsx";
 import {useLocationCollection} from "./hooks/useLocationCollection.ts";
 import Utils, {OGMFileTypes, SupportedLangs} from "../services/util/Utils.ts";
 import {transformCsvToLocation} from "../services/util/FileConversionMethods";
+import {getDraftTitle} from "../services/util/FeatureForm.ts";
 import {saveAs} from 'file-saver';
 import {
 	Button,
@@ -407,7 +408,7 @@ export default function FileValidator(): React.ReactElement {
 	const incompleteCount = collection.drafts.filter(d => Object.keys(collection.errorsById[d.id] ?? { pending: '' }).length > 0).length;
 	const selectedDraft = collection.selected;
 	const editorPanel = collection.active && selectedDraft ? {
-		title: selectedDraft.values.location_name?.trim() || `${selectedDraft.id.startsWith('existing-') ? 'Location' : 'New location'} (${selectedDraft.geometry.type})`,
+		title: getDraftTitle(selectedDraft.values.location_name, selectedDraft.id, selectedDraft.geometry.type),
 		onClose: () => collection.select(null),
 		body: (
 			<FeatureAttributeTable
